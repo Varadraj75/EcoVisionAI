@@ -89,10 +89,15 @@ All consumption data is sourced from real Kaggle sustainability datasets includi
   - Added GET/POST API endpoints for consumption profiles
   - Integrated into login flow: users enter baseline consumption data before accessing dashboard
   - Data persists to database and pre-populates form on subsequent visits
+  - **Dashboard Integration**: User's consumption data now displays in "Your Monthly Targets" section
+    - Shows monthly baseline values for energy, water, and carbon footprint
+    - Automatically calculates and displays daily averages
+    - Updates in real-time when user modifies their consumption profile
+    - Fixed decimal data type handling for all usage metrics
 - Replaced all Leaf icons with custom logo (finallogo_1762610950666.png)
 - Fixed mobile header overflow on landing page with responsive design
 - Set up PostgreSQL database integration with Drizzle ORM
-- Added comprehensive end-to-end testing for consumption input flow
+- Added comprehensive end-to-end testing for consumption input and dashboard display
 
 ## Next Steps
 - Continue integration of frontend with backend APIs
@@ -114,6 +119,7 @@ The app runs on port 5000 with:
    - Monthly water usage (Liters)
    - Monthly carbon footprint (kg CO₂)
 4. After saving (or skipping), redirected to dashboard showing consumption analytics
-5. Can navigate to predictions, eco-routes, or AI assistant via sidebar
-6. Consumption profile data persists in PostgreSQL database
-7. All historical data from Kaggle datasets available for analytics
+5. Dashboard displays user's monthly baseline targets with daily averages
+6. Can navigate to predictions, eco-routes, or AI assistant via sidebar
+7. Consumption profile data persists in PostgreSQL database and updates across all pages
+8. All historical data from Kaggle datasets available for analytics
