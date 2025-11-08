@@ -6,10 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Route as RouteIcon, MapPin, Clock, TrendingDown, Car, Bus, Bike, Leaf } from "lucide-react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
+import { getRouteOptions } from "@/data/kaggleData";
 import type { RouteOption } from "@shared/schema";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
 
 const routeIcons = {
   car: Car,
@@ -22,56 +20,18 @@ export default function Routes() {
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
   const [routes, setRoutes] = useState<RouteOption[]>([]);
-  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
 
-  const routesMutation = useMutation({
-    mutationFn: async ({ origin, destination }: { origin: string; destination: string }) => {
-      const response = await apiRequest("POST", "/api/eco/route", {
-        origin,
-        destination,
-      });
-      return response.json() as Promise<{ routes: RouteOption[]; origin: string; destination: string }>;
-    },
-    onSuccess: (data) => {
-      setRoutes(data.routes);
-      toast({
-        title: "Routes Found",
-        description: `Found ${data.routes.length} eco-friendly route options`,
-      });
-    },
-    onError: (error) => {
-      console.error("Routes error:", error);
-      // Clear stale route data on error
-      setRoutes([]);
-      
-      // Extract error message from response if available
-      let errorMessage = "Unable to calculate routes. Please check the locations and try again.";
-      if (error instanceof Error) {
-        // Parse backend error if it contains JSON
-        try {
-          const match = error.message.match(/\{.*\}/);
-          if (match) {
-            const errData = JSON.parse(match[0]);
-            errorMessage = errData.error || errorMessage;
-          } else {
-            errorMessage = error.message;
-          }
-        } catch {
-          errorMessage = error.message;
-        }
-      }
-      
-      toast({
-        title: "Route Calculation Failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleFindRoutes = () => {
+  const handleFindRoutes = async () => {
     if (!origin || !destination) return;
-    routesMutation.mutate({ origin, destination });
+    
+    setLoading(true);
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const options = getRouteOptions(origin, destination);
+    setRoutes(options);
+    setLoading(false);
   };
 
   const calculateSavings = () => {
@@ -145,13 +105,13 @@ export default function Routes() {
               size="lg"
               className="w-full mt-6"
               onClick={handleFindRoutes}
-              disabled={routesMutation.isPending || !origin || !destination}
+              disabled={loading || !origin || !destination}
               data-testid="button-find-routes"
             >
-              {routesMutation.isPending ? (
+              {loading ? (
                 <div className="flex items-center gap-2">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  <span>Calculating Routes...</span>
+                  <span>Finding Best Routes...</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
@@ -301,7 +261,7 @@ export default function Routes() {
       )}
 
       {/* Empty State */}
-      {routes.length === 0 && !routesMutation.isPending && (
+      {routes.length === 0 && !loading && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -311,7 +271,7 @@ export default function Routes() {
             <div className="text-center text-muted-foreground">
               <RouteIcon className="h-20 w-20 mx-auto mb-4 opacity-20" />
               <p className="text-lg">Enter your origin and destination to find eco-friendly routes</p>
-              <p className="text-sm mt-2">Get real routing data with actual CO₂ emissions for different transport modes</p>
+              <p className="text-sm mt-2">Compare different transportation options and their carbon impact</p>
             </div>
           </Card>
         </motion.div>
