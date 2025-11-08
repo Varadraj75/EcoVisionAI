@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Brain, Thermometer, Calendar, Zap } from "lucide-react";
 import { motion } from "framer-motion";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,10 +33,7 @@ export default function Predictions() {
 
   const predictionMutation = useMutation({
     mutationFn: async (data: PredictionFormData) => {
-      const response = await apiRequest("/api/predictions/energy", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      const response = await apiRequest("POST", "/api/predictions/energy", data);
       return response.json() as Promise<PredictionResponse>;
     },
     onSuccess: (data) => {
