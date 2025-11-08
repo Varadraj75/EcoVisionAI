@@ -1,54 +1,63 @@
 import { z } from "zod";
+import { pgTable, serial, varchar, text, timestamp, integer, decimal } from "drizzle-orm/pg-core";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
-// User schema for Firebase authentication
-export const userSchema = z.object({
-  uid: z.string(),
-  email: z.string().email(),
-  name: z.string(),
-  photoURL: z.string().optional(),
-  provider: z.string(),
-  preferences: z.object({
-    theme: z.enum(["light", "dark"]).default("light"),
-  }).optional(),
+// Drizzle Users Table
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  password: varchar("password", { length: 255 }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export type User = z.infer<typeof userSchema>;
-
-export const insertUserSchema = userSchema.omit({ uid: true });
+export type User = typeof users.$inferSelect;
+export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export const selectUserSchema = createSelectSchema(users);
 
-// Usage Record schema
-export const usageRecordSchema = z.object({
-  id: z.string(),
-  uid: z.string(),
-  date: z.string(),
-  energy_kwh: z.number(),
-  water_liters: z.number().optional(),
-  co2_kg: z.number().optional(),
-  predicted_energy_kwh: z.number().optional(),
+// Login/Signup schemas
+export const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
 });
 
-export type UsageRecord = z.infer<typeof usageRecordSchema>;
+export const signupSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+  name: z.string().min(2),
+});
 
-export const insertUsageRecordSchema = usageRecordSchema.omit({ id: true });
+// Usage Records Table
+export const usageRecords = pgTable("usage_records", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  date: varchar("date", { length: 50 }).notNull(),
+  energyKwh: decimal("energy_kwh", { precision: 10, scale: 2 }).notNull(),
+  waterLiters: decimal("water_liters", { precision: 10, scale: 2 }),
+  co2Kg: decimal("co2_kg", { precision: 10, scale: 2 }),
+  predictedEnergyKwh: decimal("predicted_energy_kwh", { precision: 10, scale: 2 }),
+});
+
+export type UsageRecord = typeof usageRecords.$inferSelect;
+export const insertUsageRecordSchema = createInsertSchema(usageRecords).omit({ id: true });
 export type InsertUsageRecord = z.infer<typeof insertUsageRecordSchema>;
 
-// Route Log schema
-export const routeLogSchema = z.object({
-  id: z.string(),
-  uid: z.string(),
-  origin: z.string(),
-  destination: z.string(),
-  pickedRoute: z.string(),
-  savedCo2Kg: z.number(),
-  distance_km: z.number(),
-  duration_min: z.number(),
-  timestamp: z.string(),
+// Route Logs Table
+export const routeLogs = pgTable("route_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  origin: varchar("origin", { length: 255 }).notNull(),
+  destination: varchar("destination", { length: 255 }).notNull(),
+  pickedRoute: varchar("picked_route", { length: 255 }).notNull(),
+  savedCo2Kg: decimal("saved_co2_kg", { precision: 10, scale: 2 }).notNull(),
+  distanceKm: decimal("distance_km", { precision: 10, scale: 2 }).notNull(),
+  durationMin: integer("duration_min").notNull(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
-export type RouteLog = z.infer<typeof routeLogSchema>;
-
-export const insertRouteLogSchema = routeLogSchema.omit({ id: true, timestamp: true });
+export type RouteLog = typeof routeLogs.$inferSelect;
+export const insertRouteLogSchema = createInsertSchema(routeLogs).omit({ id: true, timestamp: true });
 export type InsertRouteLog = z.infer<typeof insertRouteLogSchema>;
 
 // Prediction Request/Response schemas

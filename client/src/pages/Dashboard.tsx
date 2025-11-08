@@ -12,9 +12,9 @@ export default function Dashboard() {
   const { user } = useAuth();
 
   // Fetch real consumption data from backend
-  const { data: usageRecords, isLoading, error } = useQuery<UsageRecord[]>({
-    queryKey: ["/api/usage/history", user?.uid],
-    enabled: !!user?.uid,
+  const { data: usageRecords, isLoading, error} = useQuery<UsageRecord[]>({
+    queryKey: ["/api/usage/history", user?.id],
+    enabled: !!user?.id,
   });
 
   if (isLoading) {

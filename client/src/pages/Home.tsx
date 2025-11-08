@@ -33,12 +33,7 @@ export default function Home() {
     },
   ];
 
-  const stats = [
-    { value: "2.5M+", label: "Tons CO₂ Saved" },
-    { value: "50K+", label: "Active Users" },
-    { value: "1M+", label: "Predictions Made" },
-    { value: "98%", label: "User Satisfaction" },
-  ];
+  // Removed fake stats per user request
 
   return (
     <div className="min-h-screen bg-background">
@@ -117,24 +112,7 @@ export default function Home() {
               </Link>
             </div>
 
-            {/* Floating Metric Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-              {stats.map((stat, index) => (
-                <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 + index * 0.1, duration: 0.5 }}
-                >
-                  <Card className="p-6 text-center backdrop-blur-xl bg-card/50 border-card-border hover-elevate">
-                    <div className="text-3xl md:text-4xl font-bold font-mono text-primary mb-2" data-testid={`stat-${stat.label.toLowerCase().replace(/\s+/g, '-')}`}>
-                      {stat.value}
-                    </div>
-                    <div className="text-sm text-muted-foreground">{stat.label}</div>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
+            {/* Stats section removed - no fake data as requested by user */}
           </motion.div>
         </div>
       </section>

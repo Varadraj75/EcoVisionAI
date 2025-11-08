@@ -1,39 +1,52 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { userSchema, predictionRequestSchema, routeRequestSchema } from "@shared/schema";
+import { loginSchema, signupSchema, predictionRequestSchema, routeRequestSchema } from "@shared/schema";
 import { predictEnergyUsage, getRouteOptions } from "./data/kaggleData";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
-  app.post("/api/auth/upsert", async (req, res) => {
+  app.post("/api/auth/signup", async (req, res) => {
     try {
-      const userData = userSchema.parse(req.body);
-      const user = await storage.upsertUser(userData);
-      res.json(user);
+      const userData = signupSchema.parse(req.body);
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(userData.email);
+      if (existingUser) {
+        return res.status(400).json({ error: "Email already registered" });
+      }
+      
+      const user = await storage.createUser(userData);
+      const { password, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
     } catch (error) {
-      console.error("Error upserting user:", error);
+      console.error("Error creating user:", error);
       res.status(400).json({ error: "Invalid user data" });
     }
   });
 
-  app.get("/api/auth/user/:uid", async (req, res) => {
+  app.post("/api/auth/login", async (req, res) => {
     try {
-      const user = await storage.getUser(req.params.uid);
+      const { email, password } = loginSchema.parse(req.body);
+      
+      const user = await storage.verifyPassword(email, password);
       if (!user) {
-        return res.status(404).json({ error: "User not found" });
+        return res.status(401).json({ error: "Invalid email or password" });
       }
-      res.json(user);
+      
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
     } catch (error) {
-      console.error("Error getting user:", error);
-      res.status(500).json({ error: "Internal server error" });
+      console.error("Error logging in:", error);
+      res.status(400).json({ error: "Invalid credentials" });
     }
   });
 
   // Usage history routes
-  app.get("/api/usage/history/:uid", async (req, res) => {
+  app.get("/api/usage/history/:userId", async (req, res) => {
     try {
-      const records = await storage.getUsageRecords(req.params.uid);
+      const userId = parseInt(req.params.userId);
+      const records = await storage.getUsageRecords(userId);
       res.json(records);
     } catch (error) {
       console.error("Error getting usage records:", error);
@@ -82,9 +95,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Route logs
-  app.get("/api/routes/history/:uid", async (req, res) => {
+  app.get("/api/routes/history/:userId", async (req, res) => {
     try {
-      const logs = await storage.getRouteLogs(req.params.uid);
+      const userId = parseInt(req.params.userId);
+      const logs = await storage.getRouteLogs(userId);
       res.json(logs);
     } catch (error) {
       console.error("Error getting route logs:", error);
