@@ -94,6 +94,10 @@ All consumption data is sourced from real Kaggle sustainability datasets includi
     - Automatically calculates and displays daily averages
     - Updates in real-time when user modifies their consumption profile
     - Fixed decimal data type handling for all usage metrics
+  - **Bug Fixes**:
+    - Fixed mutation request body construction by removing spread operator
+    - Added proper authentication checks and response validation
+    - Improved error handling with console logging for debugging
 - Replaced all Leaf icons with custom logo (finallogo_1762610950666.png)
 - Fixed mobile header overflow on landing page with responsive design
 - Set up PostgreSQL database integration with Drizzle ORM

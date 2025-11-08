@@ -42,13 +42,21 @@ export default function ConsumptionInput() {
 
   const saveMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
+      if (!user?.id) {
+        throw new Error("User not authenticated");
+      }
+      
       const response = await apiRequest("POST", "/api/consumption/profile", {
-        ...data,
-        userId: user?.id,
+        userId: user.id,
         monthlyEnergyKwh: data.monthlyEnergyKwh ? parseFloat(data.monthlyEnergyKwh) : undefined,
         monthlyWaterLiters: data.monthlyWaterLiters ? parseFloat(data.monthlyWaterLiters) : undefined,
         monthlyCo2Kg: data.monthlyCo2Kg ? parseFloat(data.monthlyCo2Kg) : undefined,
       });
+      
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
+      
       return response.json();
     },
     onSuccess: () => {
@@ -59,7 +67,8 @@ export default function ConsumptionInput() {
       });
       setLocation("/dashboard");
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Error saving consumption profile:", error);
       toast({
         title: "Error",
         description: "Failed to save your consumption data. Please try again.",
