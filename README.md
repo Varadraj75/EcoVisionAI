@@ -50,5 +50,3 @@ This project was developed during a hackathon with a strong focus on **practical
 
 ---
 
-## 🏛️ System Architecture
-
