@@ -3,11 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Route as RouteIcon, MapPin, Clock, TrendingDown, Car, Bus, Bike, Leaf } from "lucide-react";
+import { Route as RouteIcon, MapPin, TrendingDown, Car, Bus, Bike, Leaf } from "lucide-react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
-import { getRouteOptions } from "@/data/kaggleData";
 import type { RouteOption } from "@shared/schema";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 const routeIcons = {
   car: Car,
@@ -20,18 +22,32 @@ export default function Routes() {
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
   const [routes, setRoutes] = useState<RouteOption[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
-  const handleFindRoutes = async () => {
+  const routeMutation = useMutation({
+    mutationFn: async (data: { origin: string; destination: string }) => {
+      const response = await apiRequest("POST", "/api/eco/route", data);
+      return response.json() as Promise<{ origin: string; destination: string; routes: RouteOption[]; timestamp: string }>;
+    },
+    onSuccess: (data) => {
+      setRoutes(data.routes);
+      toast({
+        title: "Routes Found!",
+        description: `Found ${data.routes.length} eco-friendly route options.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error Finding Routes",
+        description: error.message || "Failed to find routes. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleFindRoutes = () => {
     if (!origin || !destination) return;
-    
-    setLoading(true);
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const options = getRouteOptions(origin, destination);
-    setRoutes(options);
-    setLoading(false);
+    routeMutation.mutate({ origin, destination });
   };
 
   const calculateSavings = () => {
@@ -105,10 +121,10 @@ export default function Routes() {
               size="lg"
               className="w-full mt-6"
               onClick={handleFindRoutes}
-              disabled={loading || !origin || !destination}
+              disabled={routeMutation.isPending || !origin || !destination}
               data-testid="button-find-routes"
             >
-              {loading ? (
+              {routeMutation.isPending ? (
                 <div className="flex items-center gap-2">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                   <span>Finding Best Routes...</span>
@@ -261,7 +277,7 @@ export default function Routes() {
       )}
 
       {/* Empty State */}
-      {routes.length === 0 && !loading && (
+      {routes.length === 0 && !routeMutation.isPending && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

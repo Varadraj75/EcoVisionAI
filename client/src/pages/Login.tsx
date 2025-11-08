@@ -4,11 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Leaf } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import logoUrl from "@assets/logo_1762608882254.png";
 
 export default function Login() {
   const { login, signup, user } = useAuth();
@@ -67,10 +67,22 @@ export default function Login() {
       >
         <Card className="backdrop-blur-xl bg-card/80 border-card-border">
           <CardHeader className="text-center pb-4">
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-              <Leaf className="h-10 w-10 text-primary" />
-            </div>
-            <CardTitle className="text-3xl">EcoVision AI</CardTitle>
+            {user ? (
+              <Link href="/dashboard" className="w-16 h-16 mx-auto mb-4 block cursor-pointer hover-elevate rounded-2xl">
+                <img src={logoUrl} alt="EcoVision Logo" className="w-16 h-16 mx-auto" />
+              </Link>
+            ) : (
+              <div className="w-16 h-16 mx-auto mb-4">
+                <img src={logoUrl} alt="EcoVision Logo" className="w-16 h-16" />
+              </div>
+            )}
+            {user ? (
+              <Link href="/dashboard">
+                <CardTitle className="text-3xl cursor-pointer hover:text-primary transition-colors">EcoVision AI</CardTitle>
+              </Link>
+            ) : (
+              <CardTitle className="text-3xl">EcoVision AI</CardTitle>
+            )}
             <p className="text-muted-foreground text-sm mt-2">
               Track your sustainability journey
             </p>

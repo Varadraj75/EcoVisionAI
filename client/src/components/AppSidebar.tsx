@@ -1,4 +1,4 @@
-import { Home, BarChart3, Brain, Route, MessageCircle, LogOut, Leaf } from "lucide-react";
+import { Home, BarChart3, Brain, Route, MessageCircle, LogOut } from "lucide-react";
 import { useLocation } from "wouter";
 import {
   Sidebar,
@@ -12,9 +12,10 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import logoUrl from "@assets/logo_1762608882254.png";
 
 const menuItems = [
   {
@@ -50,14 +51,12 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="p-6">
+      <SidebarHeader className="p-4 sm:p-6">
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Leaf className="h-6 w-6 text-primary" />
-          </div>
-          <div>
-            <div className="font-bold text-lg">EcoVision AI</div>
-            <div className="text-xs text-muted-foreground">Sustainability Platform</div>
+          <img src={logoUrl} alt="EcoVision Logo" className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0" />
+          <div className="min-w-0">
+            <div className="font-bold text-base sm:text-lg truncate">EcoVision AI</div>
+            <div className="text-xs text-muted-foreground hidden sm:block">Sustainability Platform</div>
           </div>
         </div>
       </SidebarHeader>

@@ -109,32 +109,33 @@ export default function Assistant() {
   };
 
   return (
-    <div className="p-8 h-[calc(100vh-4rem)] flex flex-col">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="mb-6"
-      >
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-            <MessageCircle className="h-6 w-6 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold">AI Sustainability Assistant</h1>
-            <p className="text-muted-foreground">
-              Get personalized eco-friendly tips and guidance
-            </p>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Chat Container */}
+    <div className="h-[calc(100vh-4rem)] flex flex-col lg:flex-row gap-4 p-3 sm:p-4 md:p-6">
+      {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-h-0">
-        <Card className="flex-1 flex flex-col min-h-0">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-3 sm:mb-4"
+        >
+          <div className="flex items-center gap-2 sm:gap-3 mb-2">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-primary/20 to-chart-2/20 flex items-center justify-center">
+              <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate">AI Sustainability Assistant</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
+                Get personalized eco-friendly tips and guidance
+              </p>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Chat Container */}
+        <Card className="flex-1 flex flex-col min-h-0 shadow-lg">
           {/* Messages Area */}
-          <CardContent className="flex-1 p-6 overflow-y-auto space-y-6">
+          <CardContent className="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto space-y-4 sm:space-y-6">
             <AnimatePresence>
               {messages.map((message, index) => (
                 <motion.div
@@ -146,31 +147,31 @@ export default function Assistant() {
                   className={`flex gap-4 ${message.role === "user" ? "flex-row-reverse" : ""}`}
                 >
                   {/* Avatar */}
-                  <Avatar className="flex-shrink-0">
+                  <Avatar className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10">
                     {message.role === "assistant" ? (
-                      <div className="w-full h-full bg-primary/10 flex items-center justify-center">
-                        <Sparkles className="h-5 w-5 text-primary" />
+                      <div className="w-full h-full bg-gradient-to-br from-primary/20 to-chart-2/20 flex items-center justify-center">
+                        <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                       </div>
                     ) : (
-                      <AvatarFallback>
-                        {user?.name?.charAt(0) || "U"}
+                      <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
+                        {user?.name?.charAt(0).toUpperCase() || "U"}
                       </AvatarFallback>
                     )}
                   </Avatar>
 
                   {/* Message Bubble */}
-                  <div className={`flex-1 max-w-2xl ${message.role === "user" ? "items-end" : ""}`}>
+                  <div className={`flex-1 ${message.role === "user" ? "items-end" : ""}`}>
                     <div
-                      className={`p-4 rounded-xl ${
+                      className={`p-3 sm:p-4 rounded-2xl shadow-sm ${
                         message.role === "user"
-                          ? "bg-primary text-primary-foreground ml-auto"
-                          : "bg-muted"
+                          ? "bg-gradient-to-br from-primary to-primary/90 text-primary-foreground ml-auto max-w-[85%] sm:max-w-md"
+                          : "bg-muted/80 backdrop-blur-sm max-w-full sm:max-w-2xl"
                       }`}
                       data-testid={`message-${message.role}`}
                     >
-                      <p className="whitespace-pre-line">{message.content}</p>
+                      <p className="whitespace-pre-line text-sm sm:text-base leading-relaxed">{message.content}</p>
                     </div>
-                    <div className={`text-xs text-muted-foreground mt-1 ${message.role === "user" ? "text-right" : ""}`}>
+                    <div className={`text-xs text-muted-foreground mt-1.5 px-1 ${message.role === "user" ? "text-right" : ""}`}>
                       {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
@@ -183,18 +184,18 @@ export default function Assistant() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="flex gap-4"
+                  className="flex gap-3 sm:gap-4"
                 >
-                  <Avatar className="flex-shrink-0">
-                    <div className="w-full h-full bg-primary/10 flex items-center justify-center">
-                      <Sparkles className="h-5 w-5 text-primary" />
+                  <Avatar className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10">
+                    <div className="w-full h-full bg-gradient-to-br from-primary/20 to-chart-2/20 flex items-center justify-center">
+                      <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-primary animate-pulse" />
                     </div>
                   </Avatar>
-                  <div className="p-4 rounded-xl bg-muted">
-                    <div className="flex gap-1">
-                      <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "0ms" }} />
-                      <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "150ms" }} />
-                      <div className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "300ms" }} />
+                  <div className="p-3 sm:p-4 rounded-2xl bg-muted/80 backdrop-blur-sm shadow-sm">
+                    <div className="flex gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }} />
+                      <div className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "150ms" }} />
+                      <div className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "300ms" }} />
                     </div>
                   </div>
                 </motion.div>
@@ -204,16 +205,16 @@ export default function Assistant() {
 
           {/* Suggested Prompts */}
           {messages.length === 1 && (
-            <div className="px-6 pb-4">
-              <div className="text-sm font-medium mb-3 text-muted-foreground">Suggested topics:</div>
-              <div className="flex flex-wrap gap-2">
+            <div className="px-3 sm:px-6 pb-3 sm:pb-4">
+              <div className="text-xs sm:text-sm font-medium mb-2 sm:mb-3 text-muted-foreground">Suggested topics:</div>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {suggestedPrompts.map((prompt) => (
                   <Button
                     key={prompt}
                     variant="outline"
                     size="sm"
                     onClick={() => handleSend(prompt)}
-                    className="text-sm"
+                    className="text-xs sm:text-sm hover-elevate"
                     data-testid={`prompt-${prompt.toLowerCase().slice(0, 20).replace(/\s+/g, '-')}`}
                   >
                     {prompt}
@@ -224,19 +225,19 @@ export default function Assistant() {
           )}
 
           {/* Input Area */}
-          <div className="p-6 border-t">
+          <div className="p-3 sm:p-4 md:p-6 border-t bg-muted/30">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 handleSend();
               }}
-              className="flex gap-3"
+              className="flex gap-2 sm:gap-3"
             >
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask me about energy, water, transportation, or any sustainability topic..."
-                className="flex-1"
+                placeholder="Ask about sustainability..."
+                className="flex-1 bg-background shadow-sm text-sm sm:text-base"
                 disabled={isTyping}
                 data-testid="input-message"
               />
@@ -245,40 +246,42 @@ export default function Assistant() {
                 size="icon"
                 disabled={!input.trim() || isTyping}
                 data-testid="button-send"
+                className="flex-shrink-0 shadow-sm"
               >
-                <Send className="h-5 w-5" />
+                <Send className="h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
             </form>
           </div>
         </Card>
       </div>
 
-      {/* Quick Tips Sidebar */}
+      {/* Quick Tips Sidebar - Desktop: side panel, Mobile: hidden or below */}
       <motion.div
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.3, duration: 0.5 }}
-        className="mt-6"
+        className="lg:w-80 lg:flex-shrink-0 hidden lg:block"
       >
-        <Card className="p-6">
+        <Card className="p-4 sm:p-6 h-full shadow-lg">
           <h3 className="font-semibold mb-4 flex items-center gap-2">
             <Leaf className="h-5 w-5 text-primary" />
             Quick Sustainability Tips
           </h3>
-          <div className="grid md:grid-cols-2 gap-3">
-            {sustainabilityTips.slice(0, 4).map((tip) => {
+          <div className="space-y-3">
+            {sustainabilityTips.slice(0, 6).map((tip) => {
               const Icon = categoryIcons[tip.category as keyof typeof categoryIcons] || Leaf;
               return (
                 <div
                   key={tip.id}
-                  className="p-3 rounded-lg bg-muted/50 hover-elevate cursor-pointer"
+                  className="p-3 rounded-lg bg-gradient-to-br from-muted/50 to-muted/30 hover-elevate active-elevate-2 cursor-pointer border border-border/50"
                   onClick={() => handleSend(`Tell me more about: ${tip.tip}`)}
+                  data-testid={`tip-${tip.id}`}
                 >
                   <div className="flex items-start gap-2 mb-2">
                     <Icon className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                     <Badge variant="secondary" className="text-xs">{tip.category}</Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground line-clamp-2">{tip.tip}</p>
+                  <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">{tip.tip}</p>
                 </div>
               );
             })}
