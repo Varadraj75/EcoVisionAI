@@ -9,20 +9,23 @@ EcoVision AI is a comprehensive sustainability analytics platform combining a po
 ### Completed Features
 ✅ Beautiful homepage with hero section and smooth animations
 ✅ Firebase Google Sign-In authentication setup
+✅ User consumption input feature with PostgreSQL persistence
 ✅ Dashboard with sidebar navigation and metric visualizations
 ✅ Predictions page with ML energy forecasting
 ✅ Eco-route optimization page
 ✅ AI sustainability assistant chat interface
 ✅ Dark/light mode theme toggle
 ✅ Backend API endpoints for all features
+✅ PostgreSQL database for user data and consumption profiles
 ✅ In-memory storage with real Kaggle datasets
 ✅ Responsive design with Tailwind CSS
 
 ### Architecture
 - **Frontend**: React + TypeScript + Vite + Tailwind CSS + Shadcn UI
 - **Backend**: Express.js + TypeScript
-- **Auth**: Firebase Authentication (Google Sign-In)
-- **Data**: In-memory storage with Kaggle sustainability datasets
+- **Database**: PostgreSQL (Neon) for user profiles and consumption data
+- **Auth**: Firebase Authentication (Google Sign-In + Email/Password)
+- **Data**: PostgreSQL + In-memory storage with Kaggle sustainability datasets
 - **Styling**: Neo-glass aesthetic with Framer Motion animations
 
 ## Tech Stack
@@ -39,7 +42,14 @@ EcoVision AI is a comprehensive sustainability analytics platform combining a po
 
 ### Authentication
 - `POST /api/auth/upsert` - Create or update user profile
+- `POST /api/auth/signup` - Register new user with email/password
+- `POST /api/auth/login` - Authenticate user with email/password
 - `GET /api/auth/user/:uid` - Get user by Firebase UID
+
+### User Consumption Profiles
+- `GET /api/consumption/profile/:userId` - Get user's consumption profile
+- `POST /api/consumption/profile` - Save or update user's monthly consumption data
+  - Body: `{ userId: number, monthlyEnergyKwh?: number, monthlyWaterLiters?: number, monthlyCo2Kg?: number }`
 
 ### Usage Data
 - `GET /api/usage/history/:uid` - Get user's consumption history
@@ -58,10 +68,12 @@ EcoVision AI is a comprehensive sustainability analytics platform combining a po
 - `GET /api/tips/daily` - Get sustainability tips
 
 ## Environment Variables
-Required Firebase configuration (already set in Replit Secrets):
-- `VITE_FIREBASE_PROJECT_ID`
-- `VITE_FIREBASE_APP_ID`
-- `VITE_FIREBASE_API_KEY`
+Required configuration (already set in Replit Secrets):
+- `DATABASE_URL` - PostgreSQL connection string
+- `SESSION_SECRET` - Express session secret
+- `VITE_FIREBASE_PROJECT_ID` - Firebase project ID
+- `VITE_FIREBASE_APP_ID` - Firebase app ID
+- `VITE_FIREBASE_API_KEY` - Firebase API key
 
 ## Data Sources
 All consumption data is sourced from real Kaggle sustainability datasets including:
@@ -70,12 +82,17 @@ All consumption data is sourced from real Kaggle sustainability datasets includi
 - Carbon emissions (kg CO₂ per day)
 - Transportation carbon footprint data
 
-## Recent Changes
-- Moved Kaggle data from client to server (proper separation of concerns)
-- Implemented all backend API endpoints
-- Created comprehensive frontend UI with all pages
-- Set up Firebase authentication flow
-- Added dark/light mode support
+## Recent Changes (Nov 8, 2025)
+- **User Consumption Input Feature**: Added consumption data entry form after login
+  - Created `userConsumptionProfiles` PostgreSQL table
+  - Built ConsumptionInput.tsx page with form validation
+  - Added GET/POST API endpoints for consumption profiles
+  - Integrated into login flow: users enter baseline consumption data before accessing dashboard
+  - Data persists to database and pre-populates form on subsequent visits
+- Replaced all Leaf icons with custom logo (finallogo_1762610950666.png)
+- Fixed mobile header overflow on landing page with responsive design
+- Set up PostgreSQL database integration with Drizzle ORM
+- Added comprehensive end-to-end testing for consumption input flow
 
 ## Next Steps
 - Continue integration of frontend with backend APIs
@@ -90,8 +107,13 @@ The app runs on port 5000 with:
 - Concurrent mode for seamless development
 
 ## User Flow
-1. User lands on beautiful homepage
-2. Signs in with Google via Firebase
-3. Redirected to dashboard showing consumption analytics
-4. Can navigate to predictions, routes, or AI assistant
-5. All data persists in memory during session
+1. User lands on beautiful homepage with custom logo branding
+2. Signs in with Google or Email/Password via Firebase
+3. New users redirected to consumption input page to enter baseline data:
+   - Monthly energy consumption (kWh)
+   - Monthly water usage (Liters)
+   - Monthly carbon footprint (kg CO₂)
+4. After saving (or skipping), redirected to dashboard showing consumption analytics
+5. Can navigate to predictions, eco-routes, or AI assistant via sidebar
+6. Consumption profile data persists in PostgreSQL database
+7. All historical data from Kaggle datasets available for analytics
