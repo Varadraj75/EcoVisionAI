@@ -41,10 +41,10 @@ const menuItems = [
 
 export function AppSidebar() {
   const [location, setLocation] = useLocation();
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();
 
-  const handleSignOut = async () => {
-    await signOut();
+  const handleSignOut = () => {
+    logout();
     setLocation("/");
   };
 
@@ -94,8 +94,7 @@ export function AppSidebar() {
           <div className="space-y-4">
             <div className="flex items-center gap-3 p-3 rounded-lg bg-sidebar-accent/50">
               <Avatar className="h-10 w-10">
-                <AvatarImage src={user.photoURL} alt={user.name} />
-                <AvatarFallback>{user.name?.charAt(0) || "U"}</AvatarFallback>
+                <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium truncate">{user.name}</div>
