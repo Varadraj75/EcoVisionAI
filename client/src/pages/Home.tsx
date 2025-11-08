@@ -2,8 +2,9 @@ import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Leaf, TrendingDown, Route, Brain, BarChart3, Zap } from "lucide-react";
+import { TrendingDown, Route, Brain, BarChart3, Zap, Sparkles } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import logoUrl from "@assets/finallogo_1762610950666.png";
 
 export default function Home() {
   const features = [
@@ -26,7 +27,7 @@ export default function Home() {
       stats: "Save up to 40% CO₂"
     },
     {
-      icon: Leaf,
+      icon: Sparkles,
       title: "Sustainability Assistant",
       description: "Get personalized eco-friendly tips and guidance to reduce your carbon footprint and live more sustainably.",
       stats: "200+ expert tips"
@@ -39,23 +40,21 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-background/80 border-b">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Leaf className="h-6 w-6 text-primary" />
-              </div>
-              <span className="text-xl font-bold">EcoVision AI</span>
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0 flex-shrink">
+              <img src={logoUrl} alt="EcoVision Logo" className="w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0" />
+              <span className="text-base sm:text-xl font-bold truncate">EcoVision AI</span>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1 sm:gap-2 md:gap-4 flex-shrink-0">
               <ThemeToggle />
               <Link href="/login">
-                <Button variant="ghost" data-testid="button-login">
+                <Button variant="ghost" size="sm" className="hidden sm:flex" data-testid="button-login">
                   Log In
                 </Button>
               </Link>
               <Link href="/login">
-                <Button data-testid="button-get-started">
+                <Button size="sm" data-testid="button-get-started">
                   Get Started
                 </Button>
               </Link>

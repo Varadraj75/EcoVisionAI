@@ -15,7 +15,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import logoUrl from "@assets/logo_1762608882254.png";
+import logoUrl from "@assets/finallogo_1762610950666.png";
 
 const menuItems = [
   {

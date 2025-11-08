@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import logoUrl from "@assets/logo_1762608882254.png";
+import logoUrl from "@assets/finallogo_1762610950666.png";
 
 export default function Login() {
   const { login, signup, user } = useAuth();
