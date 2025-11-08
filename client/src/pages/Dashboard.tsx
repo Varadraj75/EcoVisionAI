@@ -1,11 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Zap, Droplet, Cloud, TrendingDown, Calendar } from "lucide-react";
+import { Zap, Droplet, Cloud, TrendingDown, Calendar, Target } from "lucide-react";
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
-import type { UsageRecord } from "@shared/schema";
+import type { UsageRecord, UserConsumptionProfile } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Dashboard() {
@@ -14,6 +14,12 @@ export default function Dashboard() {
   // Fetch real consumption data from backend
   const { data: usageRecords, isLoading, error} = useQuery<UsageRecord[]>({
     queryKey: ["/api/usage/history", user?.id],
+    enabled: !!user?.id,
+  });
+
+  // Fetch user's consumption profile
+  const { data: consumptionProfile } = useQuery<UserConsumptionProfile | null>({
+    queryKey: [`/api/consumption/profile/${user?.id}`],
     enabled: !!user?.id,
   });
 
@@ -42,17 +48,17 @@ export default function Dashboard() {
   }
 
   // Calculate metrics from real data
-  const totalEnergy = usageRecords.reduce((sum, d) => sum + d.energy_kwh, 0);
+  const totalEnergy = usageRecords.reduce((sum, d) => sum + parseFloat(d.energyKwh), 0);
   const avgEnergy = totalEnergy / usageRecords.length;
-  const totalWater = usageRecords.reduce((sum, d) => sum + (d.water_liters || 0), 0);
-  const totalCO2 = usageRecords.reduce((sum, d) => sum + (d.co2_kg || 0), 0);
+  const totalWater = usageRecords.reduce((sum, d) => sum + parseFloat(d.waterLiters || "0"), 0);
+  const totalCO2 = usageRecords.reduce((sum, d) => sum + parseFloat(d.co2Kg || "0"), 0);
   const avgCO2 = totalCO2 / usageRecords.length;
 
   // Calculate trends (comparing last 7 days vs previous 7 days)
   const recentData = usageRecords.slice(-7);
   const previousData = usageRecords.slice(-14, -7);
-  const recentAvgEnergy = recentData.reduce((sum, d) => sum + d.energy_kwh, 0) / 7;
-  const previousAvgEnergy = previousData.reduce((sum, d) => sum + d.energy_kwh, 0) / 7;
+  const recentAvgEnergy = recentData.reduce((sum, d) => sum + parseFloat(d.energyKwh), 0) / 7;
+  const previousAvgEnergy = previousData.reduce((sum, d) => sum + parseFloat(d.energyKwh), 0) / 7;
   const energyTrend = ((recentAvgEnergy - previousAvgEnergy) / previousAvgEnergy) * 100;
 
   const metrics = [
@@ -96,9 +102,9 @@ export default function Dashboard() {
 
   const chartData = usageRecords.slice(-14).map(d => ({
     date: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    energy: d.energy_kwh,
-    water: (d.water_liters || 0) / 10, // Scale for visibility
-    co2: d.co2_kg || 0,
+    energy: parseFloat(d.energyKwh),
+    water: parseFloat(d.waterLiters || "0") / 10, // Scale for visibility
+    co2: parseFloat(d.co2Kg || "0"),
   }));
 
   return (
@@ -128,6 +134,71 @@ export default function Dashboard() {
           </div>
         </Card>
       </motion.div>
+
+      {/* User's Monthly Baseline Targets */}
+      {consumptionProfile && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.5 }}
+        >
+          <Card className="p-6 bg-gradient-to-br from-chart-1/5 via-card to-chart-3/5 border-card-border">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Target className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">Your Monthly Targets</CardTitle>
+                <p className="text-sm text-muted-foreground">Baseline consumption data you entered</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {consumptionProfile.monthlyEnergyKwh && (
+                <div className="flex items-center gap-3 p-4 rounded-lg bg-chart-1/10" data-testid="baseline-energy">
+                  <Zap className="h-5 w-5 text-chart-1" />
+                  <div>
+                    <div className="text-2xl font-bold font-mono text-chart-1">
+                      {parseFloat(consumptionProfile.monthlyEnergyKwh).toFixed(0)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">kWh/month</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      ≈ {(parseFloat(consumptionProfile.monthlyEnergyKwh) / 30).toFixed(1)} kWh/day
+                    </div>
+                  </div>
+                </div>
+              )}
+              {consumptionProfile.monthlyWaterLiters && (
+                <div className="flex items-center gap-3 p-4 rounded-lg bg-chart-2/10" data-testid="baseline-water">
+                  <Droplet className="h-5 w-5 text-chart-2" />
+                  <div>
+                    <div className="text-2xl font-bold font-mono text-chart-2">
+                      {parseFloat(consumptionProfile.monthlyWaterLiters).toFixed(0)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">L/month</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      ≈ {(parseFloat(consumptionProfile.monthlyWaterLiters) / 30).toFixed(0)} L/day
+                    </div>
+                  </div>
+                </div>
+              )}
+              {consumptionProfile.monthlyCo2Kg && (
+                <div className="flex items-center gap-3 p-4 rounded-lg bg-chart-3/10" data-testid="baseline-co2">
+                  <Cloud className="h-5 w-5 text-chart-3" />
+                  <div>
+                    <div className="text-2xl font-bold font-mono text-chart-3">
+                      {parseFloat(consumptionProfile.monthlyCo2Kg).toFixed(0)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">kg CO₂/month</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      ≈ {(parseFloat(consumptionProfile.monthlyCo2Kg) / 30).toFixed(1)} kg/day
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
