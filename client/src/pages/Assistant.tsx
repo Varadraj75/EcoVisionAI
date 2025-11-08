@@ -8,6 +8,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { sustainabilityTips } from "@/data/kaggleData";
 import { Badge } from "@/components/ui/badge";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface Message {
   id: string;
@@ -32,19 +35,59 @@ const categoryIcons = {
 
 export default function Assistant() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
       role: "assistant",
-      content: "Hello! I'm your EcoVision AI sustainability assistant. I'm here to help you reduce your environmental impact with personalized tips and guidance. How can I help you today?",
+      content: "Hello! I'm your EcoVision AI sustainability assistant powered by advanced AI. I'm here to help you reduce your environmental impact with personalized tips and guidance based on your actual usage data. How can I help you today?",
       timestamp: new Date(),
     },
   ]);
   const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
+
+  const chatMutation = useMutation({
+    mutationFn: async (userMessage: string) => {
+      const chatHistory = messages.map(msg => ({
+        role: msg.role as "user" | "assistant",
+        content: msg.content,
+      }));
+      
+      chatHistory.push({
+        role: "user" as const,
+        content: userMessage,
+      });
+
+      const response = await apiRequest("POST", "/api/chat", {
+        messages: chatHistory,
+        userId: user?.id,
+      });
+      
+      return response.json() as Promise<{ message: string }>;
+    },
+    onSuccess: (data, userMessage) => {
+      const assistantMessage: Message = {
+        id: Date.now().toString(),
+        role: "assistant",
+        content: data.message,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
+    },
+    onError: (error) => {
+      console.error("Chat error:", error);
+      toast({
+        title: "Chat Error",
+        description: error instanceof Error && error.message.includes("API key") 
+          ? "AI service not configured. Please add your OpenAI API key." 
+          : "Unable to get AI response. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleSend = async (text: string = input) => {
-    if (!text.trim()) return;
+    if (!text.trim() || chatMutation.isPending) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -55,57 +98,8 @@ export default function Assistant() {
 
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
-    setIsTyping(true);
-
-    // Simulate AI response delay
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-
-    // Generate response based on keywords
-    let response = generateResponse(text);
-
-    const assistantMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      role: "assistant",
-      content: response,
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, assistantMessage]);
-    setIsTyping(false);
-  };
-
-  const generateResponse = (query: string): string => {
-    const lowerQuery = query.toLowerCase();
-
-    if (lowerQuery.includes("energy") || lowerQuery.includes("electricity")) {
-      const energyTips = sustainabilityTips.filter((t) => t.category === "Energy");
-      const tip = energyTips[Math.floor(Math.random() * energyTips.length)];
-      return `Great question about energy! Here's a tip: ${tip.tip}\n\nAdditionally, consider using energy-efficient appliances and unplugging devices when not in use. Your current energy usage trends show you could save up to 15% by optimizing your consumption patterns.`;
-    }
-
-    if (lowerQuery.includes("water")) {
-      const waterTips = sustainabilityTips.filter((t) => t.category === "Water");
-      const tip = waterTips[Math.floor(Math.random() * waterTips.length)];
-      return `Water conservation is crucial! ${tip.tip}\n\nBased on your dashboard data, you're already doing well with water usage. Keep up the good work and consider rainwater harvesting for outdoor use.`;
-    }
-
-    if (lowerQuery.includes("transport") || lowerQuery.includes("car") || lowerQuery.includes("commute")) {
-      const transportTips = sustainabilityTips.filter((t) => t.category === "Transportation");
-      const tip = transportTips[Math.floor(Math.random() * transportTips.length)];
-      return `Transportation is a major source of emissions. ${tip.tip}\n\nCheck out our Eco-Route Optimizer to find sustainable alternatives for your daily commute. Even small changes like carpooling can make a big difference!`;
-    }
-
-    if (lowerQuery.includes("carbon") || lowerQuery.includes("footprint") || lowerQuery.includes("co2")) {
-      return `Reducing your carbon footprint involves multiple areas:\n\n• Energy: Use renewable sources and LED lighting\n• Transportation: Choose public transit, carpool, or bike\n• Diet: Reduce meat consumption and food waste\n• Home: Improve insulation and use smart thermostats\n\nYour current CO₂ emissions are trending down by 5.8% - that's excellent progress! Keep up these sustainable habits.`;
-    }
-
-    if (lowerQuery.includes("recycle") || lowerQuery.includes("waste")) {
-      return `Recycling and waste reduction are essential for sustainability:\n\n• Separate recyclables properly (paper, plastic, glass, metal)\n• Compost organic waste to reduce landfill methane\n• Avoid single-use plastics\n• Buy products with minimal packaging\n• Donate or repurpose items instead of throwing them away\n\nConsider setting up a composting system if you haven't already!`;
-    }
-
-    // Default response with random tip
-    const randomTip = sustainabilityTips[Math.floor(Math.random() * sustainabilityTips.length)];
-    return `That's a great question! Here's a sustainability tip: ${randomTip.tip}\n\nFor more specific guidance, feel free to ask about energy, water, transportation, or any other aspect of sustainable living. I'm here to help you reduce your environmental impact!`;
+    
+    chatMutation.mutate(text);
   };
 
   return (
@@ -178,7 +172,7 @@ export default function Assistant() {
               ))}
 
               {/* Typing Indicator */}
-              {isTyping && (
+              {chatMutation.isPending && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -237,13 +231,13 @@ export default function Assistant() {
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask me about energy, water, transportation, or any sustainability topic..."
                 className="flex-1"
-                disabled={isTyping}
+                disabled={chatMutation.isPending}
                 data-testid="input-message"
               />
               <Button
                 type="submit"
                 size="icon"
-                disabled={!input.trim() || isTyping}
+                disabled={!input.trim() || chatMutation.isPending}
                 data-testid="button-send"
               >
                 <Send className="h-5 w-5" />

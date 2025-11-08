@@ -2,7 +2,10 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { loginSchema, signupSchema, predictionRequestSchema, routeRequestSchema } from "@shared/schema";
-import { predictEnergyUsage, getRouteOptions } from "./data/kaggleData";
+import { predictEnergyUsage } from "./data/kaggleData";
+import { getSustainabilityAdvice, type ChatMessage } from "./services/openai";
+import { getEcoFriendlyRoutes } from "./services/routing";
+import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
@@ -80,7 +83,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { origin, destination } = routeRequestSchema.parse(req.body);
       
-      const routes = getRouteOptions(origin, destination);
+      const routes = await getEcoFriendlyRoutes(origin, destination);
       
       res.json({
         origin,
@@ -90,7 +93,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error finding routes:", error);
-      res.status(400).json({ error: "Invalid route request" });
+      const errorMessage = error instanceof Error ? error.message : "Invalid route request";
+      res.status(400).json({ error: errorMessage });
     }
   });
 
@@ -124,6 +128,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error getting tips:", error);
       res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // AI Chatbot endpoint
+  const chatRequestSchema = z.object({
+    messages: z.array(z.object({
+      role: z.enum(["user", "assistant", "system"]),
+      content: z.string(),
+    })),
+    userId: z.number().optional(),
+  });
+
+  app.post("/api/chat", async (req, res) => {
+    try {
+      const { messages, userId } = chatRequestSchema.parse(req.body);
+      
+      // Get user context if userId is provided
+      let userContext;
+      if (userId) {
+        const records = await storage.getUsageRecords(userId);
+        if (records.length > 0) {
+          const latest = records[records.length - 1];
+          userContext = {
+            energyUsage: parseFloat(latest.energyKwh as string),
+            waterUsage: latest.waterLiters ? parseFloat(latest.waterLiters as string) : undefined,
+            co2Emissions: latest.co2Kg ? parseFloat(latest.co2Kg as string) : undefined,
+          };
+        }
+      }
+
+      const response = await getSustainabilityAdvice(messages as ChatMessage[], userContext);
+      res.json({ message: response });
+    } catch (error) {
+      console.error("Error in chat endpoint:", error);
+      if (error instanceof Error) {
+        // Map specific error types to user-friendly messages
+        if (error.message.includes("API key")) {
+          res.status(401).json({ error: "OpenAI API key not configured. Please add your OPENAI_API_KEY to environment secrets." });
+        } else if (error.message.includes("rate_limit")) {
+          res.status(429).json({ error: "Rate limit exceeded. Please try again in a moment." });
+        } else if (error.message.includes("timeout") || error.message.includes("ETIMEDOUT")) {
+          res.status(504).json({ error: "Request timeout. Please check your connection and try again." });
+        } else {
+          res.status(500).json({ error: "Failed to get AI response. Please try again." });
+        }
+      } else {
+        res.status(500).json({ error: "Failed to get AI response" });
+      }
     }
   });
 
