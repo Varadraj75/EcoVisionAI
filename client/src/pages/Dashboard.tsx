@@ -3,22 +3,54 @@ import { Zap, Droplet, Cloud, TrendingDown, Calendar } from "lucide-react";
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
-import { energyConsumptionData } from "@/data/kaggleData";
 import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
+import type { UsageRecord } from "@shared/schema";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Dashboard() {
   const { user } = useAuth();
 
-  // Calculate metrics from Kaggle data
-  const totalEnergy = energyConsumptionData.reduce((sum, d) => sum + d.energy_kwh, 0);
-  const avgEnergy = totalEnergy / energyConsumptionData.length;
-  const totalWater = energyConsumptionData.reduce((sum, d) => sum + d.water_liters, 0);
-  const totalCO2 = energyConsumptionData.reduce((sum, d) => sum + d.co2_kg, 0);
-  const avgCO2 = totalCO2 / energyConsumptionData.length;
+  // Fetch real consumption data from backend
+  const { data: usageRecords, isLoading, error } = useQuery<UsageRecord[]>({
+    queryKey: ["/api/usage/history", user?.uid],
+    enabled: !!user?.uid,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="p-8 space-y-8">
+        <Skeleton className="h-32 w-full" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-32" />
+          ))}
+        </div>
+        <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
+
+  if (error || !usageRecords) {
+    return (
+      <div className="p-8">
+        <Card className="p-8 border-destructive">
+          <p className="text-destructive">Failed to load usage data. Please try again.</p>
+        </Card>
+      </div>
+    );
+  }
+
+  // Calculate metrics from real data
+  const totalEnergy = usageRecords.reduce((sum, d) => sum + d.energy_kwh, 0);
+  const avgEnergy = totalEnergy / usageRecords.length;
+  const totalWater = usageRecords.reduce((sum, d) => sum + (d.water_liters || 0), 0);
+  const totalCO2 = usageRecords.reduce((sum, d) => sum + (d.co2_kg || 0), 0);
+  const avgCO2 = totalCO2 / usageRecords.length;
 
   // Calculate trends (comparing last 7 days vs previous 7 days)
-  const recentData = energyConsumptionData.slice(-7);
-  const previousData = energyConsumptionData.slice(-14, -7);
+  const recentData = usageRecords.slice(-7);
+  const previousData = usageRecords.slice(-14, -7);
   const recentAvgEnergy = recentData.reduce((sum, d) => sum + d.energy_kwh, 0) / 7;
   const previousAvgEnergy = previousData.reduce((sum, d) => sum + d.energy_kwh, 0) / 7;
   const energyTrend = ((recentAvgEnergy - previousAvgEnergy) / previousAvgEnergy) * 100;
@@ -35,7 +67,7 @@ export default function Dashboard() {
     },
     {
       title: "Water Consumption",
-      value: (totalWater / energyConsumptionData.length).toFixed(0),
+      value: (totalWater / usageRecords.length).toFixed(0),
       unit: "L/day",
       icon: Droplet,
       trend: -2.3,
@@ -62,11 +94,11 @@ export default function Dashboard() {
     },
   ];
 
-  const chartData = energyConsumptionData.slice(-14).map(d => ({
+  const chartData = usageRecords.slice(-14).map(d => ({
     date: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
     energy: d.energy_kwh,
-    water: d.water_liters / 10, // Scale for visibility
-    co2: d.co2_kg,
+    water: (d.water_liters || 0) / 10, // Scale for visibility
+    co2: d.co2_kg || 0,
   }));
 
   return (

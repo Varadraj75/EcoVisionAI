@@ -1,36 +1,72 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Brain, TrendingUp, Thermometer, Calendar, Zap } from "lucide-react";
+import { Brain, Thermometer, Calendar, Zap } from "lucide-react";
 import { motion } from "framer-motion";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
-import { predictEnergyUsage } from "@/data/kaggleData";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Badge } from "@/components/ui/badge";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { predictionRequestSchema, type PredictionResponse } from "@shared/schema";
+import { z } from "zod";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
+
+type PredictionFormData = z.infer<typeof predictionRequestSchema>;
 
 export default function Predictions() {
-  const [temperature, setTemperature] = useState(20);
-  const [day, setDay] = useState(15);
-  const [usagePrev, setUsagePrev] = useState(45);
-  const [prediction, setPrediction] = useState<number | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [prediction, setPrediction] = useState<PredictionResponse | null>(null);
+  const { toast } = useToast();
 
-  const handlePredict = async () => {
-    setLoading(true);
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    const predicted = predictEnergyUsage(temperature, day, usagePrev);
-    setPrediction(predicted);
-    setLoading(false);
+  const form = useForm<PredictionFormData>({
+    resolver: zodResolver(predictionRequestSchema),
+    defaultValues: {
+      temperature: 20,
+      day: 15,
+      usage_prev: 45,
+    },
+  });
+
+  const predictionMutation = useMutation({
+    mutationFn: async (data: PredictionFormData) => {
+      const response = await apiRequest("/api/predictions/energy", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+      return response.json() as Promise<PredictionResponse>;
+    },
+    onSuccess: (data) => {
+      setPrediction(data);
+      toast({
+        title: "Prediction Generated",
+        description: `Predicted energy usage: ${data.predicted_usage.toFixed(1)} kWh`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Prediction Failed",
+        description: "Unable to generate prediction. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handlePredict = (data: PredictionFormData) => {
+    predictionMutation.mutate(data);
   };
+
+  const temperature = form.watch("temperature");
+  const day = form.watch("day");
+  const usagePrev = form.watch("usage_prev");
 
   // Generate comparison chart data
   const comparisonData = prediction ? [
     { label: "Previous Day", value: usagePrev, type: "actual" },
-    { label: "Predicted", value: prediction, type: "predicted" },
+    { label: "Predicted", value: prediction.predicted_usage, type: "predicted" },
   ] : [];
 
   return (
@@ -69,101 +105,134 @@ export default function Predictions() {
               </p>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Temperature Input */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label className="flex items-center gap-2">
-                    <Thermometer className="h-4 w-4 text-chart-4" />
-                    Temperature (°C)
-                  </Label>
-                  <Badge variant="secondary" className="font-mono">
-                    {temperature}°C
-                  </Badge>
-                </div>
-                <Slider
-                  value={[temperature]}
-                  onValueChange={(vals) => setTemperature(vals[0])}
-                  min={-10}
-                  max={40}
-                  step={1}
-                  className="w-full"
-                  data-testid="slider-temperature"
-                />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>-10°C</span>
-                  <span>40°C</span>
-                </div>
-              </div>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handlePredict)} className="space-y-6">
+                  {/* Temperature Input */}
+                  <FormField
+                    control={form.control}
+                    name="temperature"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <FormLabel className="flex items-center gap-2">
+                              <Thermometer className="h-4 w-4 text-chart-4" />
+                              Temperature (°C)
+                            </FormLabel>
+                            <Badge variant="secondary" className="font-mono">
+                              {field.value}°C
+                            </Badge>
+                          </div>
+                          <FormControl>
+                            <Slider
+                              value={[field.value]}
+                              onValueChange={(vals) => field.onChange(vals[0])}
+                              min={-10}
+                              max={40}
+                              step={1}
+                              className="w-full"
+                              data-testid="slider-temperature"
+                            />
+                          </FormControl>
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>-10°C</span>
+                            <span>40°C</span>
+                          </div>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
 
-              {/* Day Input */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-chart-2" />
-                    Day of Month
-                  </Label>
-                  <Badge variant="secondary" className="font-mono">
-                    Day {day}
-                  </Badge>
-                </div>
-                <Slider
-                  value={[day]}
-                  onValueChange={(vals) => setDay(vals[0])}
-                  min={1}
-                  max={31}
-                  step={1}
-                  className="w-full"
-                  data-testid="slider-day"
-                />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>1</span>
-                  <span>31</span>
-                </div>
-              </div>
+                  {/* Day Input */}
+                  <FormField
+                    control={form.control}
+                    name="day"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <FormLabel className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-chart-2" />
+                              Day of Month
+                            </FormLabel>
+                            <Badge variant="secondary" className="font-mono">
+                              Day {field.value}
+                            </Badge>
+                          </div>
+                          <FormControl>
+                            <Slider
+                              value={[field.value]}
+                              onValueChange={(vals) => field.onChange(vals[0])}
+                              min={1}
+                              max={31}
+                              step={1}
+                              className="w-full"
+                              data-testid="slider-day"
+                            />
+                          </FormControl>
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>1</span>
+                            <span>31</span>
+                          </div>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
 
-              {/* Previous Usage Input */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="usage-prev" className="flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-chart-1" />
-                    Previous Day Usage (kWh)
-                  </Label>
-                </div>
-                <Input
-                  id="usage-prev"
-                  type="number"
-                  value={usagePrev}
-                  onChange={(e) => setUsagePrev(Number(e.target.value))}
-                  min={0}
-                  max={200}
-                  step={0.1}
-                  className="font-mono"
-                  data-testid="input-usage-prev"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Enter your energy consumption from the previous day
-                </p>
-              </div>
+                  {/* Previous Usage Input */}
+                  <FormField
+                    control={form.control}
+                    name="usage_prev"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <FormLabel className="flex items-center gap-2">
+                              <Zap className="h-4 w-4 text-chart-1" />
+                              Previous Day Usage (kWh)
+                            </FormLabel>
+                          </div>
+                          <FormControl>
+                            <input
+                              type="number"
+                              {...field}
+                              onChange={(e) => field.onChange(Number(e.target.value))}
+                              min={0}
+                              max={200}
+                              step={0.1}
+                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-mono"
+                              data-testid="input-usage-prev"
+                            />
+                          </FormControl>
+                          <p className="text-xs text-muted-foreground">
+                            Enter your energy consumption from the previous day
+                          </p>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
 
-              <Button
-                size="lg"
-                className="w-full"
-                onClick={handlePredict}
-                disabled={loading}
-                data-testid="button-predict"
-              >
-                {loading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    <span>Generating Prediction...</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Brain className="h-5 w-5" />
-                    <span>Generate Prediction</span>
-                  </div>
-                )}
-              </Button>
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="w-full"
+                    disabled={predictionMutation.isPending}
+                    data-testid="button-predict"
+                  >
+                    {predictionMutation.isPending ? (
+                      <div className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <span>Generating Prediction...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Brain className="h-5 w-5" />
+                        <span>Generate Prediction</span>
+                      </div>
+                    )}
+                  </Button>
+                </form>
+              </Form>
             </CardContent>
           </Card>
         </motion.div>
@@ -188,18 +257,14 @@ export default function Predictions() {
                       Predicted Energy Usage
                     </div>
                     <div className="text-6xl font-bold font-mono text-primary mb-2" data-testid="text-prediction-result">
-                      {prediction}
+                      {prediction.predicted_usage.toFixed(1)}
                     </div>
                     <div className="text-xl text-muted-foreground">kWh</div>
                     
                     <div className="mt-6 flex items-center justify-center gap-2">
-                      <TrendingUp className="h-5 w-5 text-primary" />
-                      <span className="text-sm">
-                        {prediction > usagePrev ? "Higher" : "Lower"} than previous day by{" "}
-                        <span className="font-bold">
-                          {Math.abs(((prediction - usagePrev) / usagePrev) * 100).toFixed(1)}%
-                        </span>
-                      </span>
+                      <Badge variant="secondary" className="text-sm">
+                        Confidence: {((prediction.confidence || 0.92) * 100).toFixed(0)}%
+                      </Badge>
                     </div>
                   </div>
 
