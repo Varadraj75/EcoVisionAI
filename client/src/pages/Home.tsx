@@ -105,11 +105,6 @@ export default function Home() {
                   Start Free Today
                 </Button>
               </Link>
-              <Link href="/dashboard">
-                <Button size="lg" variant="outline" className="text-lg px-8 py-6 backdrop-blur-sm" data-testid="button-view-demo">
-                  View Demo
-                </Button>
-              </Link>
             </div>
 
             {/* Stats section removed - no fake data as requested by user */}
