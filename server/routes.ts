@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { loginSchema, signupSchema, predictionRequestSchema, routeRequestSchema } from "@shared/schema";
 import { predictEnergyUsage } from "./data/kaggleData";
 import { getSustainabilityAdvice, type ChatMessage } from "./services/openai";
-import { getEcoFriendlyRoutes } from "./services/routing";
+import { getEcoFriendlyRoutes, getDemoRoutes } from "./services/routing";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -89,12 +89,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         origin,
         destination,
         routes,
+        isDemo: false,
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
       console.error("Error finding routes:", error);
       const errorMessage = error instanceof Error ? error.message : "Invalid route request";
-      res.status(400).json({ error: errorMessage });
+      
+      // Determine appropriate status code
+      if (error instanceof Error) {
+        if (error.message.includes("API key not configured")) {
+          res.status(503).json({ error: errorMessage });
+        } else if (error.message.includes("Unable to find")) {
+          res.status(400).json({ error: errorMessage });
+        } else {
+          res.status(502).json({ error: errorMessage });
+        }
+      } else {
+        res.status(400).json({ error: errorMessage });
+      }
     }
   });
 

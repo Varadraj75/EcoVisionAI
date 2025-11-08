@@ -41,21 +41,18 @@ export async function getEcoFriendlyRoutes(
 ): Promise<RouteOption[]> {
   // Check for API key first  
   if (!process.env.OPENROUTE_API_KEY) {
-    console.warn("OpenRouteService API key not configured - using mock data");
-    // Fall back to mock data if no API key is configured
-    return getFallbackRoutes(origin, destination, true);
+    throw new Error("OpenRouteService API key not configured. Please add OPENROUTE_API_KEY to environment secrets or use demo mode.");
   }
 
-  try {
-    const geocodeOrigin = await geocodeLocation(origin);
-    const geocodeDest = await geocodeLocation(destination);
+  const geocodeOrigin = await geocodeLocation(origin);
+  const geocodeDest = await geocodeLocation(destination);
 
-    if (!geocodeOrigin || !geocodeDest) {
-      throw new Error("Unable to find the specified locations. Please check the city names and try again.");
-    }
+  if (!geocodeOrigin || !geocodeDest) {
+    throw new Error("Unable to find the specified locations. Please check the city names and try again.");
+  }
 
-    const routes: RouteOption[] = [];
-    let hasSuccessfulRoute = false;
+  const routes: RouteOption[] = [];
+  let hasSuccessfulRoute = false;
 
     // Try to get driving route
     try {
@@ -147,27 +144,23 @@ export async function getEcoFriendlyRoutes(
       }
     }
 
-    // If no routes were successfully calculated, throw an error
-    if (!hasSuccessfulRoute) {
-      throw new Error("OpenRouteService API error. This could be due to an invalid API key or service unavailability. Using fallback data.");
-    }
-
-    // Mark the lowest CO2 option as recommended if none are marked
-    if (routes.length > 0 && !routes.some(r => r.recommended)) {
-      const lowestCO2 = routes.reduce((min, r) => r.co2_kg < min.co2_kg ? r : min);
-      lowestCO2.recommended = true;
-    }
-
-    return routes;
-  } catch (error) {
-    console.error("Routing error:", error);
-    // If we hit an API error, fall back to mock data with a warning
-    if (error instanceof Error && error.message.includes("OpenRouteService API error")) {
-      console.warn("Falling back to mock route data");
-      return getFallbackRoutes(origin, destination, true);
-    }
-    throw error; // Rethrow other errors
+  // If no routes were successfully calculated, throw an error
+  if (!hasSuccessfulRoute) {
+    throw new Error("OpenRouteService API error. Please verify your API key is valid and the service is available.");
   }
+
+  // Mark the lowest CO2 option as recommended if none are marked
+  if (routes.length > 0 && !routes.some(r => r.recommended)) {
+    const lowestCO2 = routes.reduce((min, r) => r.co2_kg < min.co2_kg ? r : min);
+    lowestCO2.recommended = true;
+  }
+
+  return routes;
+}
+
+// Demo/fallback function for when API is not available
+export function getDemoRoutes(origin: string, destination: string): RouteOption[] {
+  return getFallbackRoutes(origin, destination, true);
 }
 
 async function geocodeLocation(location: string): Promise<[number, number] | null> {
