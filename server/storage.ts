@@ -1,4 +1,4 @@
-import { users, usageRecords, routeLogs, type User, type UsageRecord, type RouteLog, type InsertUser, type InsertUsageRecord, type InsertRouteLog, type SustainabilityTip } from "@shared/schema";
+import { users, usageRecords, routeLogs, userConsumptionProfiles, type User, type UsageRecord, type RouteLog, type UserConsumptionProfile, type InsertUser, type InsertUsageRecord, type InsertRouteLog, type InsertUserConsumptionProfile, type SustainabilityTip } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcrypt";
@@ -20,6 +20,10 @@ export interface IStorage {
   
   // Sustainability tips
   getSustainabilityTips(): Promise<SustainabilityTip[]>;
+  
+  // User consumption profile methods
+  getUserConsumptionProfile(userId: number): Promise<UserConsumptionProfile | undefined>;
+  upsertUserConsumptionProfile(profile: InsertUserConsumptionProfile): Promise<UserConsumptionProfile>;
   
   // Auth methods
   verifyPassword(email: string, password: string): Promise<User | null>;
@@ -91,6 +95,38 @@ export class DatabaseStorage implements IStorage {
 
   async getSustainabilityTips(): Promise<SustainabilityTip[]> {
     return sustainabilityTips;
+  }
+
+  async getUserConsumptionProfile(userId: number): Promise<UserConsumptionProfile | undefined> {
+    const [profile] = await db
+      .select()
+      .from(userConsumptionProfiles)
+      .where(eq(userConsumptionProfiles.userId, userId));
+    return profile || undefined;
+  }
+
+  async upsertUserConsumptionProfile(profile: InsertUserConsumptionProfile): Promise<UserConsumptionProfile> {
+    const existing = await this.getUserConsumptionProfile(profile.userId);
+    
+    if (existing) {
+      // Update existing profile
+      const [updated] = await db
+        .update(userConsumptionProfiles)
+        .set({
+          ...profile,
+          updatedAt: new Date(),
+        })
+        .where(eq(userConsumptionProfiles.userId, profile.userId))
+        .returning();
+      return updated;
+    } else {
+      // Insert new profile
+      const [newProfile] = await db
+        .insert(userConsumptionProfiles)
+        .values(profile)
+        .returning();
+      return newProfile;
+    }
   }
 }
 

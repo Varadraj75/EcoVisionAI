@@ -11,6 +11,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
+import ConsumptionInput from "@/pages/ConsumptionInput";
 import Dashboard from "@/pages/Dashboard";
 import Predictions from "@/pages/Predictions";
 import Routes from "@/pages/Routes";
@@ -46,6 +47,11 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/login" component={Login} />
+      <Route path="/consumption-input">
+        <ProtectedRoute>
+          <ConsumptionInput />
+        </ProtectedRoute>
+      </Route>
       <Route path="/dashboard">
         <ProtectedRoute>
           <DashboardLayout>

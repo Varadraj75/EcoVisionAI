@@ -106,3 +106,27 @@ export const sustainabilityTipSchema = z.object({
 });
 
 export type SustainabilityTip = z.infer<typeof sustainabilityTipSchema>;
+
+// User Consumption Profile (current baseline metrics)
+export const userConsumptionProfiles = pgTable("user_consumption_profiles", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().unique().references(() => users.id),
+  monthlyEnergyKwh: decimal("monthly_energy_kwh", { precision: 10, scale: 2 }),
+  monthlyWaterLiters: decimal("monthly_water_liters", { precision: 10, scale: 2 }),
+  monthlyCo2Kg: decimal("monthly_co2_kg", { precision: 10, scale: 2 }),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type UserConsumptionProfile = typeof userConsumptionProfiles.$inferSelect;
+export const insertUserConsumptionProfileSchema = createInsertSchema(userConsumptionProfiles).omit({ id: true, updatedAt: true });
+export type InsertUserConsumptionProfile = z.infer<typeof insertUserConsumptionProfileSchema>;
+
+// User consumption input form schema
+export const userConsumptionInputSchema = z.object({
+  userId: z.number(),
+  monthlyEnergyKwh: z.number().min(0).optional(),
+  monthlyWaterLiters: z.number().min(0).optional(),
+  monthlyCo2Kg: z.number().min(0).optional(),
+});
+
+export type UserConsumptionInput = z.infer<typeof userConsumptionInputSchema>;

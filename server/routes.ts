@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { loginSchema, signupSchema, predictionRequestSchema, routeRequestSchema } from "@shared/schema";
+import { loginSchema, signupSchema, predictionRequestSchema, routeRequestSchema, userConsumptionInputSchema } from "@shared/schema";
 import { predictEnergyUsage, getRouteOptions } from "./data/kaggleData";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -124,6 +124,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error getting tips:", error);
       res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // User consumption profile routes
+  app.get("/api/consumption/profile/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const profile = await storage.getUserConsumptionProfile(userId);
+      res.json(profile || null);
+    } catch (error) {
+      console.error("Error getting consumption profile:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/consumption/profile", async (req, res) => {
+    try {
+      const data = userConsumptionInputSchema.parse(req.body);
+      
+      const profile = await storage.upsertUserConsumptionProfile({
+        userId: data.userId,
+        monthlyEnergyKwh: data.monthlyEnergyKwh?.toString(),
+        monthlyWaterLiters: data.monthlyWaterLiters?.toString(),
+        monthlyCo2Kg: data.monthlyCo2Kg?.toString(),
+      });
+      
+      res.json(profile);
+    } catch (error) {
+      console.error("Error saving consumption profile:", error);
+      res.status(400).json({ error: "Invalid consumption data" });
     }
   });
 

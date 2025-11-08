@@ -20,7 +20,7 @@ export default function Login() {
 
   useEffect(() => {
     if (user) {
-      setLocation("/dashboard");
+      setLocation("/consumption-input");
     }
   }, [user, setLocation]);
 
@@ -29,7 +29,7 @@ export default function Login() {
     setLoading(true);
     try {
       await login(loginForm.email, loginForm.password);
-      setLocation("/dashboard");
+      setLocation("/consumption-input");
     } catch (error) {
       // Error handled in AuthContext
     } finally {
@@ -42,7 +42,7 @@ export default function Login() {
     setLoading(true);
     try {
       await signup(signupForm.email, signupForm.password, signupForm.name);
-      setLocation("/dashboard");
+      setLocation("/consumption-input");
     } catch (error) {
       // Error handled in AuthContext
     } finally {
