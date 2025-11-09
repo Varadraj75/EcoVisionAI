@@ -6,6 +6,12 @@ This project was developed during a hackathon with a strong focus on **practical
 
 ---
 
+## 🚀 Live Demo
+
+🔗 **Try it on Replit:** https://replit.com/t/polaris/repls/EcoVisionAI
+
+---
+
 ## ✨ Core Features
 
 | Feature | Description |
@@ -49,4 +55,3 @@ This project was developed during a hackathon with a strong focus on **practical
 - **Vite + ESBuild** (fast bundling & DX)
 
 ---
-
